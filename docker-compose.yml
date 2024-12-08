@@ -1,0 +1,66 @@
+services:
+  jmeter:
+    image: justb4/jmeter:5.5
+    container_name: aqa-jmeter
+    volumes:
+      - ./jmeter:/jmeter
+      - aqa_jmeter_report:/jmeter/report/raw
+      - aqa_jmeter_html_report:/jmeter/report/html
+    entrypoint: >
+      sh -c "rm -rf /jmeter/report/html/* &&
+      rm -rf /jmeter/report/raw/* &&
+      jmeter -n -t /jmeter/test-plan.jmx -l /jmeter/report/raw/results.jtl &&
+      jmeter -g /jmeter/report/raw/results.jtl -o /jmeter/report/html"
+
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aqa-tests-runner
+    volumes:
+      - ./tests:/app/tests
+      - aqa_volume_report:/app/allure-results
+      - aqa_html_report:/app/allure-report
+    command: /bin/sh docker/test_runner.sh
+    networks:
+      - aqa_network
+
+  allure:
+    image: frankescobar/allure-docker-service
+    container_name: aqa-allure-server
+    depends_on:
+      - tests
+    ports:
+      - "5050:5050"
+    volumes:
+      - aqa_volume_report:/app/allure-results
+      - aqa_html_report:/app/allure-report
+    networks:
+      - aqa_network
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 3
+      KEEP_HISTORY: "true"
+    command: allure serve /app/allure-results --port 5050
+
+  nginx:
+    image: nginx:latest
+    container_name: aqa-jmeter-report-viewer
+    volumes:
+      - aqa_jmeter_html_report:/usr/share/nginx/html:ro
+    ports:
+      - "8080:80"
+    networks:
+      - aqa_network
+    depends_on:
+      - jmeter
+
+volumes:
+  aqa_volume_report: { }
+  aqa_html_report: { }
+  aqa_jmeter_report: { }
+  aqa_jmeter_html_report: { }
+
+networks:
+  aqa_network:
+    driver: bridge
+
