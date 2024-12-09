@@ -9,7 +9,20 @@ RUN apt-get update && apt-get install -y \
     git \
     build-essential \
     libffi-dev \
+    wget \
+    gnupg \
+    libnss3 \
+    libxss1 \
+    libappindicator1 \
+    fonts-liberation \
+    xdg-utils \
+    chromium-driver \
     && apt-get clean
+
+# Устанавливаем Chrome
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update && apt-get install -y google-chrome-stable --no-install-recommends
 
 # Установка Allure CLI
 RUN curl -o allure.tgz -L https://github.com/allure-framework/allure2/releases/download/2.32.0/allure-2.32.0.tgz \

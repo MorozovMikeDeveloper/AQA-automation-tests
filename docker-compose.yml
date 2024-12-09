@@ -16,7 +16,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      TZ: "Europe/Moscow"
+      PYTHONUNBUFFERED: 1
     container_name: aqa-tests-runner
+    shm_size: '2gb'
     volumes:
       - ./tests:/app/tests
       - aqa_volume_report:/app/allure-results
